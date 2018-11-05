@@ -30,7 +30,11 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 def spider(user, max_pages = 0, input_override = 0):
     if user == "":
         print("No user provided")
-        exit(2)
+        return
+    if type(max_pages) is not int:
+        print("Depth is not an integer")
+        print("Using default depth")
+        max_pages = 0
     page = 1
     post_links = []
     image_links = []
@@ -123,15 +127,15 @@ def main(argv):
         elif opt in ("-u", "--user"):
             user = arg
         elif opt in ("-d", "--depth"):
-            depth = arg
+            depth = int(arg)
     if inputfile != '':
         file = open(inputfile, 'r')
         for line in file:
             u = line.strip("\n\r")
             print(u)
-            spider(str(u), depth)
+            spider(str(u), int(depth))
     if user != '':
-        spider(str(user), depth)
+        spider(str(user), int(depth))
 
 # End of main function
 
