@@ -4,6 +4,7 @@ import os, sys, getopt
 import time
 
 # Print iterations progress
+# https://stackoverflow.com/a/3160819
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
     """
     Call in a loop to create terminal progress bar
