@@ -140,3 +140,5 @@ start_time = time.time()
 main(sys.argv[1:])
 
 print("--- %s seconds ---" % (time.time() - start_time))
+
+# Maxwell Jones 2018

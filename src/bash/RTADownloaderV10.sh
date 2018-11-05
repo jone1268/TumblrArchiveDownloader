@@ -41,9 +41,9 @@ function show_time () {
 }
 
 function wgetVersion () {
- 	
+
  # 	read -n 1 -p "CONTINUE?:" inp
-	
+
 	printf "\e[31m\e[5m[Working: Grabbing Webpage Files]\e[0m\n"
 
 
@@ -88,7 +88,7 @@ function wgetVersion () {
 		cd ..
 	fi
 	printf "\033[K"
-		
+
 	#Check and Handle static.tumblr.com directory
 	printf "[Handling static.tumblr.com Directory]\r"
 	#printf "\033[A"
@@ -102,7 +102,7 @@ function wgetVersion () {
 
 	find . -mindepth 2 -type f -exec mv {} . \;
 	rm -R -- */
-	
+
 
 	fileList="fileList.txt"
 	for file in **; do
@@ -254,10 +254,10 @@ function curlVersion () {
 		fi
 		NUM=$[$NUM+1]
 	done
-	
+
 	printf "\033[A\033[K"
 	printf "\e[1m[Webpage Files]\e[0m\t\e[32m[COMPLETE]\e[0m\n"
-		
+
 	END1=`date +%s`
 	RUNTIMEWF=$[$END1-$START]
 	echo "[Time To Retrieve Webpage Files: " $(show_time $RUNTIMEWF)"]"
@@ -267,7 +267,7 @@ function curlVersion () {
 	sort -u $curlImageList >> $noDupsCurlImageList
 	rm $curlImageList
 	NumOfImagesCurl=$(wc -l < $noDupsCurlImageList)
-	
+
 	while IFS= read line; do
 		printf "Images Left:\t%d\n" "$NumOfImagesCurl"
 		wget $line -q --show-progress
@@ -316,7 +316,7 @@ if [ ! -z $tumblrUserName ]; then
 	cp -R $tumblrUserName Completed\ Archives
 
 	END=`date +%s`
-	
+
 	SizeOfDir=$(du -h $tumblrUserName)
 	NumImages=$(ls $tumblrUserName | wc -l)
 	SUMIMAGES=$[$SUMIMAGES+$NumImages]
@@ -414,4 +414,4 @@ echo "[Number of Archives: $TMPCOUNTER]"
 echo "[Total Images Downloaded Successfully: $SUMIMAGES]"
 
 printf "[END OF PROGRAM]\n"
-#Maxwell Jones ©2017
+#Maxwell Jones 2017

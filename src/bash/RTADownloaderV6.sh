@@ -57,7 +57,7 @@ function full_program () {
 		END1=`date +%s`
 		RUNTIME=$[$END1-$START]
 
-		
+
 
 		echo "Time To Retrieve Webpage Files: " $(show_time $RUNTIME)
 		printf "#######################\n"
@@ -173,9 +173,9 @@ function full_program () {
 						fi
 					fi
 				fi
-				
+
 				if [ -z "$LinkPhoto" ]; then
-					PostImage=$(egrep '"og:image"' $line)	
+					PostImage=$(egrep '"og:image"' $line)
 					#echo "PostImage: $PostImage"
 					PostImageURL=$PostImage
 					while [ $NumberOfImages -gt 0 ]; do #loop through images in post
@@ -304,7 +304,7 @@ function full_program () {
 	END2=`date +%s`
 	DLTIME=$[$END2-$END1]
 	echo "Image Download Time: " $(show_time $DLTIME)
-	
+
 	cd ..
 	mv $DIR/$tumblrUserNameImageDir .
 	rm -r $DIR
@@ -358,10 +358,10 @@ function UpdateCompleteDirectories () {
 		read -p "Update: $line ? [Y/N/(E)nd]: " userInput </dev/tty
 		echo "userInput: $userInput"
 		case $userInput in
-			[Yy]*) 
+			[Yy]*)
 					full_program $line
 					;;
-			[Nn]*) 
+			[Nn]*)
 					echo "Not Updating $line"
 					;; #Don't update, move to next
 	#		[Aa]*) 	##change to be separate from if statement. Have it be an argument for exec
@@ -426,5 +426,4 @@ elif [ -f "$1" ]; then
 fi
 
 printf "\n[END OF PROGRAM]\n"
-#Maxwell Jones ©2017
-#This code can be used with proper citation
+#Maxwell Jones 2017
