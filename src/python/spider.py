@@ -42,9 +42,7 @@ def spider(user, max_pages = 0, input_override = 0):
     while page <= max_pages and posts_flag > 0:
         posts_flag = 0
         url = "https://" + str(user) + ".tumblr.com/page/" + str(page)
-        # url = 'https://tastefulahegao.tumblr.com/' + str(page)
         source_code = requests.get(url)
-        # print("[Retreived webpage!]" + " [Page " + str(page) + "]")
         plain_text = source_code.text
         soup = BeautifulSoup(plain_text, 'html.parser')
         for post in soup.find_all('article'):
@@ -53,9 +51,7 @@ def spider(user, max_pages = 0, input_override = 0):
                 if href is not None and "/post/" in href and "plus.google" not in href:
                     post_links.append(href)
                     posts_flag += 1
-                    # print(href)
         post_links = sorted(set(post_links))
-        # print(posts_flag)
         if posts_flag > 0:
             printProgressBar(page, max_pages, prefix = 'Progress:', suffix = 'Complete', length = 50)
         elif page <= max_pages:
@@ -63,8 +59,8 @@ def spider(user, max_pages = 0, input_override = 0):
         page += 1
 
     if len(post_links) == 0:
-        print("Could not find any posts")
-        exit(2)
+        print("[Could not find any posts]")
+        return
 
     print("[Total number of posts: " + str(len(post_links)) + "]")
     print("[Parsing for Images]")
