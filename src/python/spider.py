@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-import os, sys
+import os, sys, getopt
 import time
 
 # Print iterations progress
@@ -24,7 +24,11 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     if iteration == total:
         print()
 
-def spider(user, max_pages):
+def spider(user, max_pages = 0):
+    if user == "":
+        print("No user provided")
+        exit(2)
+
     page = 1
     post_links = []
     image_links = []
@@ -55,6 +59,10 @@ def spider(user, max_pages):
         elif page <= max_pages:
             printProgressBar(max_pages, max_pages, prefix = 'Progress:', suffix = 'Complete', length = 50)
         page += 1
+
+    if len(post_links) == 0:
+        print("Could not find any posts")
+        exit(2)
 
     print("[Parsing for Images]")
     printProgressBar(0, len(post_links), prefix = 'Progress:', suffix = 'Complete', length = 50)
@@ -88,11 +96,45 @@ def spider(user, max_pages):
             r = requests.get(image)
             open(str(image_name), "wb").write(r.content)
             printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-        print("[Enjoy the downloaded images!]")
+        print("[Enjoy the downloaded images from " + str(user) + "!]")
     else:
         print("[Download Canceled]")
+    os.chdir("..")
+
+def main(argv):
+    inputfile = ''
+    user = ''
+    try:
+        opts, args = getopt.getopt(argv, "hi:u:", ["ifile=", "user="])
+    except getopt.GetoptError:
+        print("spider.py -i <inputfile> -o <outputfile>")
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print("spider.py -i <inputfile> -o <outputfile>")
+            sys.exit()
+        elif opt in ("-i", "--ifile"):
+            inputfile = arg
+        elif opt in ("-u", "--user"):
+            user = arg
+    # print("Input file is ", inputfile)
+    # print("User is ", user)
+    if inputfile != '':
+        file = open(inputfile, 'r')
+        for line in file:
+            u = line.strip("\n\r")
+            print(u)
+            spider(str(u), 3)
+
 
 start_time = time.time()
 
-# spider("kerorira", 6)
+# momocoharu
+# gebdraws
+# signoaaa
+# pemu-pomon
+# pintasan
+
+main(sys.argv[1:])
+
 print("--- %s seconds ---" % (time.time() - start_time))
