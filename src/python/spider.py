@@ -24,11 +24,12 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     if iteration == total:
         print()
 
-def spider(user, max_pages = 0):
+# End of printProgressBar function
+
+def spider(user, max_pages = 0, input_override = 0):
     if user == "":
         print("No user provided")
         exit(2)
-
     page = 1
     post_links = []
     image_links = []
@@ -64,6 +65,7 @@ def spider(user, max_pages = 0):
         print("Could not find any posts")
         exit(2)
 
+    print("[Total number of posts: " + str(len(post_links)) + "]")
     print("[Parsing for Images]")
     printProgressBar(0, len(post_links), prefix = 'Progress:', suffix = 'Complete', length = 50)
     for i, p in enumerate(post_links):
@@ -85,7 +87,10 @@ def spider(user, max_pages = 0):
     image_links = sorted(set(image_links))
     l = len(image_links)
     print("[Total number of images: " + str(l) + "]")
-    ans = input("Would you like to download [" + str(l) + "] images? (y/n) ")
+    if input_override == 1:
+        ans = input("Would you like to download [" + str(l) + "] images? (y/n) ")
+    else:
+        ans = "y"
     if ans == "y" or ans == "Y":
         os.mkdir(str(user))
         os.chdir(str(user))
@@ -101,39 +106,39 @@ def spider(user, max_pages = 0):
         print("[Download Canceled]")
     os.chdir("..")
 
+# End of spider function
+
 def main(argv):
     inputfile = ''
     user = ''
+    depth = 0
     try:
-        opts, args = getopt.getopt(argv, "hi:u:", ["ifile=", "user="])
+        opts, args = getopt.getopt(argv, "hi:u:d:", ["ifile=", "user=", "depth="])
     except getopt.GetoptError:
-        print("spider.py -i <inputfile> -o <outputfile>")
+        print("spider.py -i <inputfile> -u <username> -d <depth>")
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print("spider.py -i <inputfile> -o <outputfile>")
+            print("spider.py -i <inputfile> -u <username> -d <depth>")
             sys.exit()
         elif opt in ("-i", "--ifile"):
             inputfile = arg
         elif opt in ("-u", "--user"):
             user = arg
-    # print("Input file is ", inputfile)
-    # print("User is ", user)
+        elif opt in ("-d", "--depth"):
+            depth = arg
     if inputfile != '':
         file = open(inputfile, 'r')
         for line in file:
             u = line.strip("\n\r")
             print(u)
-            spider(str(u), 3)
+            spider(str(u), depth)
+    if user != '':
+        spider(str(user), depth)
 
+# End of main function
 
 start_time = time.time()
-
-# momocoharu
-# gebdraws
-# signoaaa
-# pemu-pomon
-# pintasan
 
 main(sys.argv[1:])
 
