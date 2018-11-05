@@ -86,23 +86,34 @@ def spider(user, max_pages = 0, input_override = 0):
         printProgressBar(i + 1, len(post_links), prefix = 'Progress:', suffix = 'Complete', length = 50)
 
     image_links = sorted(set(image_links))
-    l = len(image_links)
+    image_names = []
+    localImages = []
+    images_to_download = []
+    if os.path.exists(str(user)):
+        localImages = os.listdir(str(user))
+    for image in image_links:
+        image_name = str(user) + "_" + image.rsplit("/", 1)[1]
+        if image_name not in localImages:
+            images_to_download.append(image)
+    l = len(images_to_download)
     print("[Total number of images: " + str(l) + "]")
     if input_override == 1:
         ans = input("Would you like to download [" + str(l) + "] images? (y/n) ")
     else:
         ans = "y"
     if ans == "y" or ans == "Y":
-        os.mkdir(str(user))
+        if not os.path.exists(str(user)):
+            os.mkdir(str(user))
         os.chdir(str(user))
         # Initial call to print 0% progress
-        printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-        for i, image in enumerate(image_links):
-            image_name = str(user) + "_" + image.rsplit("/", 1)[1]
-            r = requests.get(image)
-            open(str(image_name), "wb").write(r.content)
-            printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-        print("[Enjoy the downloaded images from " + str(user) + "!]")
+        if l > 0:
+            printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+            for i, image in enumerate(images_to_download):
+                image_name = str(user) + "_" + image.rsplit("/", 1)[1]
+                r = requests.get(image)
+                open(str(image_name), "wb").write(r.content)
+                printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+            print("[Enjoy the downloaded images from " + str(user) + "!]")
     else:
         print("[Download Canceled]")
     os.chdir("..")
@@ -128,6 +139,10 @@ def main(argv):
             user = arg
         elif opt in ("-d", "--depth"):
             depth = int(arg)
+    if inputfile != '' or user != '':
+        if not os.path.exists("Archives"):
+            os.mkdir("Archives")
+        os.chdir("Archives")
     if inputfile != '':
         file = open(inputfile, 'r')
         for line in file:
