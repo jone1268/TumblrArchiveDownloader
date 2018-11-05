@@ -94,6 +94,5 @@ def spider(user, max_pages):
 
 start_time = time.time()
 
-spider("tastefulahegao", 2)
 # spider("kerorira", 6)
 print("--- %s seconds ---" % (time.time() - start_time))
