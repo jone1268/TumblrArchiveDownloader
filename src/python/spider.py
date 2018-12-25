@@ -1,5 +1,5 @@
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, SoupStrainer
 import os, sys, getopt
 import time
 
@@ -46,15 +46,24 @@ def spider(user, max_pages = 0, input_override = 0):
     while page <= max_pages and posts_flag > 0:
         posts_flag = 0
         url = "https://" + str(user) + ".tumblr.com/page/" + str(page)
-        source_code = requests.get(url)
-        plain_text = source_code.text
-        soup = BeautifulSoup(plain_text, 'html.parser')
-        for post in soup.find_all('article'):
-            for link in post.find_all('a'):
-                href = link.get('href')
-                if href is not None and "/post/" in href and "plus.google" not in href:
-                    post_links.append(href)
-                    posts_flag += 1
+        response = requests.get(url)
+        # print(response.status_code)
+        plain_text = response.text
+        post_url_len = len(str(str(user) + ".tumblr.com/post/"))
+        for post in BeautifulSoup(plain_text, 'html.parser', parse_only=SoupStrainer('a')):
+            if post.has_attr('href'):
+                if post['href'] is not None and "plus.google" not in post['href']:
+                    # print(post['href'][:post_url_len+7])
+                    if str("http://" + str(user) + ".tumblr.com/post/") in post['href'][:post_url_len+7]:
+                        # print("[DEBUG]" + post['href'])
+                        post_links.append(post['href'])
+                        posts_flag += 1
+                    if str("https://" + str(user) + ".tumblr.com/post/") in post['href'][:post_url_len+8]:
+                        # print("[DEBUG]" + post['href'])
+                        post_links.append(post['href'])
+                        posts_flag += 1
+                    # print()
+        # exit()
         post_links = sorted(set(post_links))
         if posts_flag > 0:
             printProgressBar(page, max_pages, prefix = 'Progress:', suffix = 'Complete', length = 50)
