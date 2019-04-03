@@ -2,6 +2,17 @@ import requests
 from bs4 import BeautifulSoup, SoupStrainer
 import os, sys, getopt
 import time
+import zipfile
+
+# https://www.toptal.com/python/beginners-guide-to-concurrency-and-parallelism-in-python
+
+# See if can use threads to grab webpages and go to posts async
+# ie: parse and download at same time
+
+def zipdir(path, ziph):
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            ziph.write(os.path.join(root, file))
 
 # Print iterations progress
 # https://stackoverflow.com/a/3160819
@@ -27,7 +38,7 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 
 # End of printProgressBar function
 
-def spider(user, max_pages = 0, input_override = 0):
+def spider(user, max_pages = 0, input_override = 0, print_override = 0):
     if user == "":
         print("No user provided")
         return
@@ -42,33 +53,30 @@ def spider(user, max_pages = 0, input_override = 0):
     if max_pages <= 0:
         max_pages = 100
     print("[Obtaining Pages]")
-    printProgressBar(0, max_pages, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    if print_override == 0:
+        printProgressBar(0, max_pages, prefix = 'Progress:', suffix = 'Complete', length = 50)
     while page <= max_pages and posts_flag > 0:
         posts_flag = 0
         url = "https://" + str(user) + ".tumblr.com/page/" + str(page)
         response = requests.get(url)
-        # print(response.status_code)
         plain_text = response.text
         post_url_len = len(str(str(user) + ".tumblr.com/post/"))
         for post in BeautifulSoup(plain_text, 'html.parser', parse_only=SoupStrainer('a')):
             if post.has_attr('href'):
                 if post['href'] is not None and "plus.google" not in post['href']:
-                    # print(post['href'][:post_url_len+7])
                     if str("http://" + str(user) + ".tumblr.com/post/") in post['href'][:post_url_len+7]:
-                        # print("[DEBUG]" + post['href'])
                         post_links.append(post['href'])
                         posts_flag += 1
                     if str("https://" + str(user) + ".tumblr.com/post/") in post['href'][:post_url_len+8]:
-                        # print("[DEBUG]" + post['href'])
                         post_links.append(post['href'])
                         posts_flag += 1
-                    # print()
-        # exit()
+
         post_links = sorted(set(post_links))
-        if posts_flag > 0:
-            printProgressBar(page, max_pages, prefix = 'Progress:', suffix = 'Complete', length = 50)
-        elif page <= max_pages:
-            printProgressBar(max_pages, max_pages, prefix = 'Progress:', suffix = 'Complete', length = 50)
+        if print_override == 0:
+            if posts_flag > 0:
+                printProgressBar(page, max_pages, prefix = 'Progress:', suffix = 'Complete', length = 50)
+            elif page <= max_pages:
+                printProgressBar(max_pages, max_pages, prefix = 'Progress:', suffix = 'Complete', length = 50)
         page += 1
 
     if len(post_links) == 0:
@@ -77,7 +85,8 @@ def spider(user, max_pages = 0, input_override = 0):
 
     print("[Total number of posts: " + str(len(post_links)) + "]")
     print("[Parsing for Images]")
-    printProgressBar(0, len(post_links), prefix = 'Progress:', suffix = 'Complete', length = 50)
+    if print_override == 0:
+        printProgressBar(0, len(post_links), prefix = 'Progress:', suffix = 'Complete', length = 50)
     for i, p in enumerate(post_links):
         # print(p)
         page_source = requests.get(str(p))
@@ -92,10 +101,10 @@ def spider(user, max_pages = 0, input_override = 0):
                 final_image_url = image_url + "_1280." + ext
                 # print(final_image_url)
                 image_links.append(final_image_url)
-        printProgressBar(i + 1, len(post_links), prefix = 'Progress:', suffix = 'Complete', length = 50)
+        if print_override == 0:
+            printProgressBar(i + 1, len(post_links), prefix = 'Progress:', suffix = 'Complete', length = 50)
 
     image_links = sorted(set(image_links))
-    image_names = []
     localImages = []
     images_to_download = []
     if os.path.exists(str(user)):
@@ -116,16 +125,21 @@ def spider(user, max_pages = 0, input_override = 0):
         os.chdir(str(user))
         # Initial call to print 0% progress
         if l > 0:
-            printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+            if print_override == 0:
+                printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
             for i, image in enumerate(images_to_download):
                 image_name = str(user) + "_" + image.rsplit("/", 1)[1]
                 r = requests.get(image)
                 open(str(image_name), "wb").write(r.content)
-                printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+                if print_override == 0:
+                    printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
             print("[Enjoy the downloaded images from " + str(user) + "!]")
     else:
         print("[Download Canceled]")
     os.chdir("..")
+    zipf = zipfile.ZipFile(str(user + '.zip'), 'w', zipfile.ZIP_DEFLATED)
+    zipdir(str(user + '/'), zipf)
+    zipf.close()
 
 # End of spider function
 
