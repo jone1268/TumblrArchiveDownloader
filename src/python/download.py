@@ -110,6 +110,11 @@ def get_image_links_from_post(user, post_link):
     page_source = requests.get(str(post_link))
     plain_text = page_source.text
     soup = BeautifulSoup(plain_text, 'html.parser')
+    # Check for reblogs : Don't want these
+    for p in soup.find_all('a'):
+        if p.has_attr('class'):
+            if p['class'][0] == 'reblog-link':
+                return
     for link in soup.find_all('img'):
         img = link.get('src')
         if img is not None and "media.tumblr.com" in img and "avatar" not in img:
@@ -117,7 +122,6 @@ def get_image_links_from_post(user, post_link):
             image_url = s[0]
             ext = s[1].split('.', 1)[1]
             final_image_url = image_url + "_1280." + ext
-            # print(final_image_url)
             image_links.append(final_image_url)
     image_links = sorted(set(image_links))
     gloabal_image_links.extend(image_links)
@@ -181,7 +185,7 @@ def prepare_image_links(directory, user, image_links):
         if image_name not in localImages:
             images_to_download.append(image)
     l = len(images_to_download)
-    # print("[Total number of images: " + str(l) + "]")
+    print("[Total number of images: " + str(l) + "]")
     # print(images_to_download)
     return images_to_download
 
@@ -192,7 +196,6 @@ def download_image(directory, user, link):
     r = requests.get(link)
     with open(str(download_path), "wb") as f:
         f.write(r.content)
-    # print("Downloaded image: ", link)
 
 
 # Use generator?
@@ -204,11 +207,11 @@ def read_file(file):
 
 def download_user(user, depth):
     ts = time()
-    post_links = get_post_links(user, 2)
+    post_links = get_post_links(user, depth)
     archive_dir = str(path) + "/" + str(user)
     # print("[Saving to: " + str(archive_dir) + "]")
     post_queue = Queue()
-    for t in range(8):
+    for t in range(10):
         worker = Post_Image_Worker(post_queue)
         worker.daemon = True
         worker.start()
@@ -217,24 +220,26 @@ def download_user(user, depth):
     post_queue.join()
 
     # Remove any duplicates
-    print(len(gloabal_image_links))
+    # print(len(gloabal_image_links))
     no_dup_image_list = list(dict.fromkeys(gloabal_image_links))
-    print(len(no_dup_image_list))
+    # print(len(no_dup_image_list))
     gloabal_image_links.clear()
 
     print("[Number of images to Download: " + str(len(no_dup_image_list)) + "]")
 
     links = prepare_image_links(archive_dir, user, no_dup_image_list)
-
+    print("[Downloading Images]")
     image_queue = Queue()
-    for t in range(8):
+    for t in range(10):
         worker = Image_Download_Worker(image_queue)
         worker.daemon = True
         worker.start()
     for link in links:
         image_queue.put((archive_dir, user, link))
     image_queue.join()
-    print(str(user) + " took " + str(time() - ts))
+    print("[Finsihed Downloading]")
+    print("[" + str(user) + " took " + str(time() - ts) + "]")
+    print("=================================")
 
 
 class Post_Image_Worker(Thread):
@@ -270,15 +275,16 @@ def main(argv):
     depth = 5
     for arg in argv:
         try:
-            print(arg)
+            # print(arg)
             f = open(arg, 'r')
             users.extend(read_file(f))
             f.close()
         except FileNotFoundError:
             # This argument is a user
-            print('File not exist, probably a user')
+            # print('File not exist, probably a user')
             users.append(arg)
     print(users)
+    print("=================================")
     if not os.path.exists(path):
         os.mkdir(path)
     # Have all the users that we want to download images from
@@ -288,6 +294,7 @@ def main(argv):
     total_time = time()
 
     for user in users:
+        print("[" + str(user) + "]")
         download_user(user, depth)
 
     print("Total exec time: " + str(time() - total_time))
