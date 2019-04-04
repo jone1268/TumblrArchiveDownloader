@@ -9,6 +9,7 @@ import zipfile
 from queue import Queue
 from threading import Thread
 
+
 # TODO:
 # Use Threads to improve batch image download time
 # Test using Threads with getting post_links
@@ -16,12 +17,16 @@ from threading import Thread
 #
 # Metadata files for information:
 #   last update, image names, ...
+#
+# Progress Logging
 
 # https://www.toptal.com/python/beginners-guide-to-concurrency-and-parallelism-in-python
 
 path = "Archives"
 
-gloabal_image_links = []
+global_image_links = []
+global_image_counter = 0
+
 
 def zipdir(path, ziph):
     for root, dirs, files in os.walk(path):
@@ -106,6 +111,7 @@ def get_post_links(user, max_pages=5, input_override=0, print_override=1):
 
 
 def get_image_links_from_post(user, post_link):
+    global global_image_links
     image_links = []
     page_source = requests.get(str(post_link))
     plain_text = page_source.text
@@ -124,7 +130,7 @@ def get_image_links_from_post(user, post_link):
             final_image_url = image_url + "_1280." + ext
             image_links.append(final_image_url)
     image_links = sorted(set(image_links))
-    gloabal_image_links.extend(image_links)
+    global_image_links.extend(image_links)
 
 
 def download_image_links(user, image_links, input_override=0, print_override=1, zip_override=0):
@@ -191,11 +197,15 @@ def prepare_image_links(directory, user, image_links):
 
 
 def download_image(directory, user, link):
+    global global_image_counter
     image_name = "[" + str(user) + "]" + "_" + link.rsplit("/", 1)[1]
     download_path = str(directory) + "/" + str(image_name)
     r = requests.get(link)
     with open(str(download_path), "wb") as f:
         f.write(r.content)
+    global_image_counter += 1
+    printProgressBar(global_image_counter, len(global_image_links), prefix = 'Progress:', suffix = 'Complete', length = 50)
+    # print(global_image_counter)
 
 
 # Use generator?
@@ -206,40 +216,45 @@ def read_file(file):
     return users
 
 def download_user(user, depth):
+    global global_image_links
+    global global_image_counter
     ts = time()
     post_links = get_post_links(user, depth)
     archive_dir = str(path) + "/" + str(user)
     # print("[Saving to: " + str(archive_dir) + "]")
+    post_time = time()
     post_queue = Queue()
-    for t in range(10):
+    for t in range(8):
         worker = Post_Image_Worker(post_queue)
         worker.daemon = True
         worker.start()
     for post_link in post_links:
         post_queue.put((user, post_link))
     post_queue.join()
+    print("[Obtained posts]:[" + str(time() - post_time) + "]")
 
     # Remove any duplicates
-    # print(len(gloabal_image_links))
-    no_dup_image_list = list(dict.fromkeys(gloabal_image_links))
-    # print(len(no_dup_image_list))
-    gloabal_image_links.clear()
+    global_image_links = list(dict.fromkeys(global_image_links))
 
-    print("[Number of images to Download: " + str(len(no_dup_image_list)) + "]")
+    print("[Number of images to Download: " + str(len(global_image_links)) + "]")
 
-    links = prepare_image_links(archive_dir, user, no_dup_image_list)
+    links = prepare_image_links(archive_dir, user, global_image_links)
+
     print("[Downloading Images]")
+    image_download_time = time()
     image_queue = Queue()
-    for t in range(10):
+    for t in range(8):
         worker = Image_Download_Worker(image_queue)
         worker.daemon = True
         worker.start()
     for link in links:
         image_queue.put((archive_dir, user, link))
     image_queue.join()
-    print("[Finsihed Downloading]")
-    print("[" + str(user) + " took " + str(time() - ts) + "]")
+    print("[Finsihed Downloading]:[" + str(time() - image_download_time)+ "]")
+    print("[" + str(user) + "]:[" + str(time() - ts) + "]")
     print("=================================")
+    global_image_counter = 0
+    global_image_links.clear()
 
 
 class Post_Image_Worker(Thread):
