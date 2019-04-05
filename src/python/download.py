@@ -60,7 +60,7 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
         print()
 
 
-def get_post_links(user, max_pages=5, input_override=0, print_override=1):
+def get_post_links(user, max_pages=5):
     if user == "":
         print("No user provided")
         return
@@ -73,10 +73,6 @@ def get_post_links(user, max_pages=5, input_override=0, print_override=1):
     posts_flag = 1
     if max_pages <= 0:
         max_pages = 100
-    # print("[Obtaining Pages]")
-    if print_override == 0:
-        printProgressBar(0, max_pages, prefix='Progress:',
-                         suffix='Complete', length=50)
     while page <= max_pages and posts_flag > 0:
         posts_flag = 0
         url = "https://" + str(user) + ".tumblr.com/page/" + str(page)
@@ -90,22 +86,14 @@ def get_post_links(user, max_pages=5, input_override=0, print_override=1):
                             str("https://" + str(user) + ".tumblr.com/post/") in post['href'][:post_url_len + 8]):
                         post_links.append(get_short_link(post['href']))
                         posts_flag += 1
-                        # compare_str = (post['href'] + '.')[:-1]
+
         post_links = sorted(set(post_links))
-        if print_override == 0:
-            if posts_flag > 0:
-                printProgressBar(
-                    page, max_pages, prefix='Progress:', suffix='Complete', length=50)
-            elif page <= max_pages:
-                printProgressBar(
-                    max_pages, max_pages, prefix='Progress:', suffix='Complete', length=50)
         page += 1
 
     if len(post_links) == 0:
         print("[Could not find any posts]")
         return
 
-    # print("[Total number of posts: " + str(len(post_links)) + "]")
     return post_links
 
 
@@ -157,7 +145,6 @@ def prepare_image_links(directory, user, image_links):
             images_to_download.append(image)
     l = len(images_to_download)
     print("[Total number of New images: " + str(l) + "]")
-    # print(images_to_download)
     return images_to_download
 
 
@@ -184,16 +171,19 @@ def read_file(file):
 def download_user(user, depth):
     global global_image_links
     global global_image_counter
+
     ts = time()
+
     print("[Get Posts from " + str(user) + "]")
     get_post_links_time = time()
     post_links = get_post_links(user, depth)
     print("[Number of posts: " + str(len(post_links)) + "]:[" + str(time() - get_post_links_time) + "]")
+
     archive_dir = str(path) + "/" + str(user)
-    # print("[Saving to: " + str(archive_dir) + "]")
+
     post_image_time = time()
     post_queue = Queue()
-    for t in range(8):
+    for t in range(10):
         worker = Post_Image_Worker(post_queue)
         worker.daemon = True
         worker.start()
@@ -214,7 +204,7 @@ def download_user(user, depth):
     print("[Downloading Images]")
     image_download_time = time()
     image_queue = Queue()
-    for t in range(8):
+    for t in range(10):
         worker = Image_Download_Worker(image_queue)
         worker.daemon = True
         worker.start()
@@ -222,6 +212,7 @@ def download_user(user, depth):
         image_queue.put((archive_dir, user, link))
     image_queue.join()
     print("[Finsihed Downloading]:[" + str(time() - image_download_time) + "]")
+
     print("[" + str(user) + "]:[" + str(time() - ts) + "]")
     print("=================================")
 
