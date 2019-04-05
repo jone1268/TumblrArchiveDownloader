@@ -8,6 +8,7 @@ from time import time
 import zipfile
 from queue import Queue
 from threading import Thread
+from re import compile
 
 
 # TODO:
@@ -49,8 +50,8 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
         length      - Optional  : character length of bar (Int)
         fill        - Optional  : bar fill character (Str)
     """
-    percent = ("{0:." + str(decimals) + "f}").format(100
-                                                     * (iteration / float(total)))
+    percent = ("{0:." + str(decimals) + "f}").format(100 *
+                                                     (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end='\r')
@@ -85,13 +86,11 @@ def get_post_links(user, max_pages=5, input_override=0, print_override=1):
         for post in BeautifulSoup(plain_text, 'html.parser', parse_only=SoupStrainer('a')):
             if post.has_attr('href'):
                 if post['href'] is not None and "plus.google" not in post['href']:
-                    if str("http://" + str(user) + ".tumblr.com/post/") in post['href'][:post_url_len + 7]:
-                        post_links.append(post['href'])
+                    if (str("http://" + str(user) + ".tumblr.com/post/") in post['href'][:post_url_len + 7] or
+                            str("https://" + str(user) + ".tumblr.com/post/") in post['href'][:post_url_len + 8]):
+                        post_links.append(get_short_link(post['href']))
                         posts_flag += 1
-                    if str("https://" + str(user) + ".tumblr.com/post/") in post['href'][:post_url_len + 8]:
-                        post_links.append(post['href'])
-                        posts_flag += 1
-
+                        # compare_str = (post['href'] + '.')[:-1]
         post_links = sorted(set(post_links))
         if print_override == 0:
             if posts_flag > 0:
@@ -108,6 +107,15 @@ def get_post_links(user, max_pages=5, input_override=0, print_override=1):
 
     # print("[Total number of posts: " + str(len(post_links)) + "]")
     return post_links
+
+
+def get_short_link(link):
+    # Get post number
+    p = compile('/post/[0-9]+')
+    post_num = p.findall(link)[0]
+    base_post_link = compile("/post/[0-9]+").split(link, 1)[0]
+    new_link = str(base_post_link) + str(post_num)
+    return new_link
 
 
 def get_image_links_from_post(user, post_link):
@@ -131,50 +139,7 @@ def get_image_links_from_post(user, post_link):
             image_links.append(final_image_url)
     image_links = sorted(set(image_links))
     global_image_links.extend(image_links)
-
-
-def download_image_links(user, image_links, input_override=0, print_override=1, zip_override=0):
-    localImages = []
-    images_to_download = []
-    if os.path.exists(str(user)):
-        localImages = os.listdir(str(user))
-    for image in image_links:
-        image_name = str(user) + "_" + image.rsplit("/", 1)[1]
-        if image_name not in localImages:
-            images_to_download.append(image)
-    l = len(images_to_download)
-    # print("[Total number of images: " + str(l) + "]")
-    if input_override == 1:
-        ans = input(
-            "Would you like to download [" + str(l) + "] images? (y/n) ")
-    else:
-        ans = "y"
-    if ans == "y" or ans == "Y":
-        if not os.path.exists(str(user)):
-            os.mkdir(str(user))
-        os.chdir(str(user))
-        # Initial call to print 0% progress
-        if l > 0:
-            if print_override == 0:
-                printProgressBar(0, l, prefix='Progress:',
-                                 suffix='Complete', length=50)
-            for i, image in enumerate(images_to_download):
-                image_name = str(user) + "_" + image.rsplit("/", 1)[1]
-                r = requests.get(image)
-                with open(str(image_name), "wb") as f:
-                    f.write(r.content)
-                if print_override == 0:
-                    printProgressBar(i + 1, l, prefix='Progress:',
-                                     suffix='Complete', length=50)
-            # print("[Enjoy the downloaded images from " + str(user) + "!]")
-    else:
-        print("[Download Canceled]")
-    os.chdir("..")
-
-    if zip_override == 0:
-        zipf = zipfile.ZipFile(str(user + '.zip'), 'w', zipfile.ZIP_DEFLATED)
-        zipdir(str(user + '/'), zipf)
-        zipf.close()
+    global_image_links = list(set(global_image_links))
 
 
 def prepare_image_links(directory, user, image_links):
@@ -191,7 +156,7 @@ def prepare_image_links(directory, user, image_links):
         if image_name not in localImages:
             images_to_download.append(image)
     l = len(images_to_download)
-    print("[Total number of images: " + str(l) + "]")
+    print("[Total number of New images: " + str(l) + "]")
     # print(images_to_download)
     return images_to_download
 
@@ -204,8 +169,8 @@ def download_image(directory, user, link):
     with open(str(download_path), "wb") as f:
         f.write(r.content)
     global_image_counter += 1
-    printProgressBar(global_image_counter, len(global_image_links), prefix = 'Progress:', suffix = 'Complete', length = 50)
-    # print(global_image_counter)
+    printProgressBar(global_image_counter, len(global_image_links),
+                     prefix='Progress:', suffix='Complete', length=50)
 
 
 # Use generator?
@@ -215,14 +180,18 @@ def read_file(file):
         users.append(line.strip("\n\r"))
     return users
 
+
 def download_user(user, depth):
     global global_image_links
     global global_image_counter
     ts = time()
+    print("[Get Posts from " + str(user) + "]")
+    get_post_links_time = time()
     post_links = get_post_links(user, depth)
+    print("[Number of posts: " + str(len(post_links)) + "]:[" + str(time() - get_post_links_time) + "]")
     archive_dir = str(path) + "/" + str(user)
     # print("[Saving to: " + str(archive_dir) + "]")
-    post_time = time()
+    post_image_time = time()
     post_queue = Queue()
     for t in range(8):
         worker = Post_Image_Worker(post_queue)
@@ -231,14 +200,16 @@ def download_user(user, depth):
     for post_link in post_links:
         post_queue.put((user, post_link))
     post_queue.join()
-    print("[Obtained posts]:[" + str(time() - post_time) + "]")
 
-    # Remove any duplicates
-    global_image_links = list(dict.fromkeys(global_image_links))
+    print("[Obtained image links]:[" + str(time() - post_image_time) + "]")
 
     print("[Number of images to Download: " + str(len(global_image_links)) + "]")
 
     links = prepare_image_links(archive_dir, user, global_image_links)
+
+    if len(links) == 0:
+        print("[No new images to Download with given depth]")
+        return
 
     print("[Downloading Images]")
     image_download_time = time()
@@ -250,11 +221,9 @@ def download_user(user, depth):
     for link in links:
         image_queue.put((archive_dir, user, link))
     image_queue.join()
-    print("[Finsihed Downloading]:[" + str(time() - image_download_time)+ "]")
+    print("[Finsihed Downloading]:[" + str(time() - image_download_time) + "]")
     print("[" + str(user) + "]:[" + str(time() - ts) + "]")
     print("=================================")
-    global_image_counter = 0
-    global_image_links.clear()
 
 
 class Post_Image_Worker(Thread):
@@ -286,8 +255,12 @@ class Image_Download_Worker(Thread):
 
 
 def main(argv):
+    global global_image_links
+    global global_image_counter
+
     users = []
     depth = 5
+
     for arg in argv:
         try:
             # print(arg)
@@ -298,21 +271,24 @@ def main(argv):
             # This argument is a user
             # print('File not exist, probably a user')
             users.append(arg)
+
     print(users)
     print("=================================")
+
     if not os.path.exists(path):
         os.mkdir(path)
+
     # Have all the users that we want to download images from
 
-    # Start with testing normal functionality then move to using Threads
-    # Threading
     total_time = time()
 
     for user in users:
         print("[" + str(user) + "]")
         download_user(user, depth)
+        global_image_counter = 0
+        global_image_links.clear()
 
-    print("Total exec time: " + str(time() - total_time))
+    print("[Total exec time: " + str(time() - total_time) + "]")
 
 
 if __name__ == "__main__":
