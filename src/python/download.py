@@ -251,7 +251,8 @@ def main(argv):
     global global_image_counter
 
     users = []
-    depth = 10
+    depth = 3
+    multiproc = False
 
     for arg in argv:
         try:
@@ -274,11 +275,26 @@ def main(argv):
 
     total_time = time()
 
-    for user in users:
-        print("[" + str(user) + "]")
-        download_user(user, depth)
-        global_image_counter = 0
-        global_image_links.clear()
+    # Create new process
+    if multiproc == True:
+        p_workers = []
+
+        for user in users:
+            print("[" + str(user) + "]")
+            # download_user(user, depth)
+            p_worker = multiprocessing.Process(target=download_user, args=(user, depth))
+            p_worker.start()
+            p_workers.append(p_worker)
+        for p in p_workers:
+            p.join()
+        # global_image_counter = 0
+        # global_image_links.clear()
+    else:
+        for user in users:
+            print("[" + str(user) + "]")
+            download_user(user, depth)
+            global_image_counter = 0
+            global_image_links.clear()
 
     print("[Total exec time: " + str(time() - total_time) + "]")
 
