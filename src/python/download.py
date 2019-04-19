@@ -9,6 +9,7 @@ import zipfile
 from queue import Queue
 from threading import Thread
 from re import compile
+import multiprocessing
 
 
 # TODO:
@@ -250,7 +251,7 @@ def main(argv):
     global global_image_counter
 
     users = []
-    depth = 5
+    depth = 10
 
     for arg in argv:
         try:
