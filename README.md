@@ -10,9 +10,11 @@ Then follows post links to grab images.
 
 # Python
 ```
-python3 spider.py -i <inputfile> -u <username> -d <depth>
+python3.7 download.py <username, ...> <filename, ...> -d <depth>
 ```
-If depth flag is left empty, spider will call with depth of 0, which is seen as full archive. Currently only goes to maximum of 100 pages.
+Can have variable usernames and filenames in same command.  
+*-d* tag is optional.  
+Default depth is 5. Add *-d* tag to change depth. Depth of -1 will go 100 pages.
 # Bash V6
 ```
 Usage: $0 tumblrUserName/textdocument

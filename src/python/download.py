@@ -198,6 +198,8 @@ def download_user(user, depth):
 
     links = prepare_image_links(archive_dir, user, global_image_links)
 
+    global_image_links = links
+
     if len(links) == 0:
         print("[No new images to Download with given depth]")
         return
@@ -251,20 +253,33 @@ def main(argv):
     global global_image_counter
 
     users = []
-    depth = 3
+    depth = 5
     multiproc = False
+    l = len(argv)
 
-    for arg in argv:
-        try:
-            # print(arg)
-            f = open(arg, 'r')
-            users.extend(read_file(f))
-            f.close()
-        except FileNotFoundError:
-            # This argument is a user
-            # print('File not exist, probably a user')
-            users.append(arg)
+    for index, arg in enumerate(argv):
+        if str(arg) == "-d":
+            # Depth tag induced
+            if (index+1) is l:
+                # Missing depth value
+                # Use default
+                pass
+            else:
+                depth = int(argv[index+1])
+                break
+        else:
+            try:
+                # print(arg)
+                f = open(arg, 'r')
+                users.extend(read_file(f))
+                f.close()
+            except FileNotFoundError:
+                # This argument is a user
+                # print('File not exist, probably a user')
+                users.append(arg)
 
+    users = sorted(set(users))
+    print("Depth: %d" % depth)
     print(users)
     print("=================================")
 
