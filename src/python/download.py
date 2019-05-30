@@ -13,16 +13,16 @@ import multiprocessing
 
 
 # TODO:
-# Use Threads to improve batch image download time
-# Test using Threads with getting post_links
-# Use threads when downloading images
+# Convert to electron-python app
+#
+# Add Cateragorization for images via tags given on tumblr
+#   - Tag Directories
+#   - Add metadata file to map tags to files
 #
 # Metadata files for information:
 #   last update, image names, ...
 #
 # Progress Logging
-
-# https://www.toptal.com/python/beginners-guide-to-concurrency-and-parallelism-in-python
 
 path = "Archives"
 
@@ -35,10 +35,9 @@ def zipdir(path, ziph):
         for file in files:
             ziph.write(os.path.join(root, file))
 
+
 # Print iterations progress
 # https://stackoverflow.com/a/3160819
-
-
 def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
     """
     Call in a loop to create terminal progress bar
@@ -248,15 +247,8 @@ class Image_Download_Worker(Thread):
                 self.queue.task_done()
 
 
-def main(argv):
-    global global_image_links
-    global global_image_counter
-
+def parse_arguments(argv):
     users = []
-    depth = 5
-    multiproc = False
-    l = len(argv)
-
     for index, arg in enumerate(argv):
         if str(arg) == "-d":
             # Depth tag induced
@@ -277,8 +269,18 @@ def main(argv):
                 # This argument is a user
                 # print('File not exist, probably a user')
                 users.append(arg)
+    return sorted(set(users))
 
-    users = sorted(set(users))
+
+def main(argv):
+    global global_image_links
+    global global_image_counter
+
+    users = parse_arguments(argv)
+    depth = 5
+    multiproc = False
+    l = len(argv)
+
     print("Depth: %d" % depth)
     print(users)
     print("=================================")
