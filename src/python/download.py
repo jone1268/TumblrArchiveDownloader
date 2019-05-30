@@ -92,7 +92,7 @@ def get_post_links(user, max_pages=5):
 
     if len(post_links) == 0:
         print("[Could not find any posts]")
-        return
+        return []
 
     return post_links
 
@@ -168,20 +168,7 @@ def read_file(file):
     return users
 
 
-def download_user(user, depth):
-    global global_image_links
-    global global_image_counter
-
-    ts = time()
-
-    print("[Get Posts from " + str(user) + "]")
-    get_post_links_time = time()
-    post_links = get_post_links(user, depth)
-    print("[Number of posts: " + str(len(post_links)) + "]:[" + str(time() - get_post_links_time) + "]")
-
-    archive_dir = str(path) + "/" + str(user)
-
-    post_image_time = time()
+def spawn_get_image_links_workers(user):
     post_queue = Queue()
     for t in range(10):
         worker = Post_Image_Worker(post_queue)
@@ -191,6 +178,38 @@ def download_user(user, depth):
         post_queue.put((user, post_link))
     post_queue.join()
 
+
+def spawn_download_image_workers(user, links):
+    image_queue = Queue()
+    for t in range(10):
+        worker = Image_Download_Worker(image_queue)
+        worker.daemon = True
+        worker.start()
+    for link in links:
+        image_queue.put((archive_dir, user, link))
+    image_queue.join()
+
+
+def download_user(user, depth):
+    global global_image_links
+    global global_image_counter
+
+    ts = time()
+
+    print("[Get Posts from " + str(user) + "]")
+    get_post_links_time = time()
+    post_links = get_post_links(user, depth)
+
+    if len(post_links) == 0:
+        print("=================================")
+        return
+
+    print("[Number of posts: " + str(len(post_links)) + "]:[" + str(time() - get_post_links_time) + "]")
+
+    archive_dir = str(path) + "/" + str(user)
+
+    post_image_time = time()
+    spawn_get_image_links_workers(user)
     print("[Obtained image links]:[" + str(time() - post_image_time) + "]")
 
     print("[Number of images to Download: " + str(len(global_image_links)) + "]")
@@ -205,14 +224,7 @@ def download_user(user, depth):
 
     print("[Downloading Images]")
     image_download_time = time()
-    image_queue = Queue()
-    for t in range(10):
-        worker = Image_Download_Worker(image_queue)
-        worker.daemon = True
-        worker.start()
-    for link in links:
-        image_queue.put((archive_dir, user, link))
-    image_queue.join()
+    spawn_download_image_workers(user, links)
     print("[Finsihed Downloading]:[" + str(time() - image_download_time) + "]")
 
     print("[" + str(user) + "]:[" + str(time() - ts) + "]")
