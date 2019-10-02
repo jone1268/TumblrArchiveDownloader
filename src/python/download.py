@@ -28,11 +28,19 @@ from halo import Halo
 #
 # Progress Logging
 
+class Spinners:
+    def __init__(self):
+        self.posts = Halo(text=f'Gathering Posts', spinner='dots', color='blue')
+        self.image_links = Halo(text=f'Gathering Image Links', spinner='dots', color='blue')
+        self.prepare_links = Halo(text=f'Preparing Image Links', spinner='dots', color='blue')
+        self.download_images = Halo(text=f'Downloading Images', spinner='dots', color='blue')
+
 path = "Archives"
 
 global_image_links = []
 global_image_counter = 0
-
+multiproc = False
+spinners = Spinners()
 
 def zipdir(path, ziph):
     for root, dirs, files in os.walk(path):
@@ -123,7 +131,7 @@ def get_image_links_from_post(user, post_link):
                 return
     for link in soup.find_all('img'):
         img = link.get('src')
-        if img is not None and "media.tumblr.com" in img and "avatar" not in img:
+        if img is not None and "media.tumblr.com" in img and "avatar" not in img and "tumblr_" in img:
             s = img.rsplit('_', 1)
             image_url = s[0]
             ext = s[1].split('.', 1)[1]
@@ -147,21 +155,19 @@ def prepare_image_links(directory, user, image_links):
         image_name = "[" + str(user) + "]" + "_" + image.rsplit("/", 1)[1]
         if image_name not in localImages:
             images_to_download.append(image)
-    l = len(images_to_download)
-    print("[Total number of New images: " + str(l) + "]")
     return images_to_download
 
 
 def download_image(directory, user, link):
     global global_image_counter
+    global spinners
     image_name = "[" + str(user) + "]" + "_" + link.rsplit("/", 1)[1]
     download_path = str(directory) + "/" + str(image_name)
     r = requests.get(link)
     with open(str(download_path), "wb") as f:
         f.write(r.content)
     global_image_counter += 1
-    printProgressBar(global_image_counter, len(global_image_links),
-                     prefix='Progress:', suffix='Complete', length=50)
+    spinners.download_images.text = f'Downloading Images [{global_image_counter}/{len(global_image_links)}]'
 
 
 # Use generator?
@@ -194,45 +200,62 @@ def spawn_download_image_workers(archive_dir, user, links):
     image_queue.join()
 
 
-def download_user(user, depth):
+def download_user(user, depth, verbose=False):
     global global_image_links
     global global_image_counter
+    global spinners
 
     ts = time()
 
-    print("[Get Posts from " + str(user) + "]")
-    get_post_links_time = time()
+    if verbose:
+        spinners.posts.start()
+    
     post_links = get_post_links(user, depth)
+    
+    if verbose:
+        spinners.posts.succeed()
 
     if len(post_links) == 0:
-        print("=================================")
+        print('=================================')
         return
-
-    print("[Number of posts: " + str(len(post_links)) + "]:[" + str(time() - get_post_links_time) + "]")
 
     archive_dir = str(path) + "/" + str(user)
 
     post_image_time = time()
-    spawn_get_image_links_workers(user, post_links)
-    print("[Obtained image links]:[" + str(time() - post_image_time) + "]")
 
-    print("[Number of images to Download: " + str(len(global_image_links)) + "]")
+    if verbose:
+        spinners.image_links.start()
+
+    spawn_get_image_links_workers(user, post_links)
+    
+    if verbose:
+        spinners.image_links.succeed()
+
+    if verbose:
+        spinners.prepare_links.start()
 
     links = prepare_image_links(archive_dir, user, global_image_links)
-
     global_image_links = links
 
     if len(links) == 0:
-        print("[No new images to Download with given depth]")
+        spinners.prepare_links.stop_and_persist(symbol='⚠', text='No new images to Download with given depth')
         return
 
-    print("[Downloading Images]")
-    image_download_time = time()
-    spawn_download_image_workers(archive_dir, user, links)
-    print("[Finsihed Downloading]:[" + str(time() - image_download_time) + "]")
+    if verbose:
+        spinners.prepare_links.succeed(text=f'New Images to Download: {len(links)}')
 
-    print("[" + str(user) + "]:[" + str(time() - ts) + "]")
-    print("=================================")
+    image_download_time = time()
+
+    if verbose:
+        spinners.download_images.start(text=f'Downloading Images [{global_image_counter}/{len(links)}]')
+
+    spawn_download_image_workers(archive_dir, user, links)
+
+    if verbose:
+        spinners.download_images.succeed(text=f'Downloading Complete')
+
+    print(f'[{user}]:[{time() - ts}]')
+    print('=================================')
 
 
 class Post_Image_Worker(Thread):
@@ -264,6 +287,8 @@ class Image_Download_Worker(Thread):
 
 
 def parse_arguments(argv):
+    global multiproc
+
     users = []
     for index, arg in enumerate(argv):
         if str(arg) == "-d":
@@ -275,6 +300,8 @@ def parse_arguments(argv):
             else:
                 depth = int(argv[index+1])
                 break
+        elif str(arg) == "-m":
+            multiproc = True
         else:
             try:
                 # print(arg)
@@ -291,15 +318,15 @@ def parse_arguments(argv):
 def main(argv):
     global global_image_links
     global global_image_counter
+    global multiproc
 
     users = parse_arguments(argv)
     depth = 5
-    multiproc = False
     l = len(argv)
 
-    print("Depth: %d" % depth)
+    print(f'Depth: {depth}')
     print(users)
-    print("=================================")
+    print('=================================')
 
     if not os.path.exists(path):
         os.mkdir(path)
@@ -309,27 +336,23 @@ def main(argv):
     total_time = time()
 
     # Create new process
-    if multiproc == True:
+    if multiproc:
         p_workers = []
-
         for user in users:
-            print("[" + str(user) + "]")
-            # download_user(user, depth)
+            print(f'[{user}]')
             p_worker = multiprocessing.Process(target=download_user, args=(user, depth))
             p_worker.start()
             p_workers.append(p_worker)
         for p in p_workers:
             p.join()
-        # global_image_counter = 0
-        # global_image_links.clear()
     else:
         for user in users:
-            print("[" + str(user) + "]")
-            download_user(user, depth)
+            print(f'[{user}]')
+            download_user(user, depth, True)
             global_image_counter = 0
             global_image_links.clear()
 
-    print("[Total exec time: " + str(time() - total_time) + "]")
+    print(f'[Total exec time: {time() - total_time}]')
 
 
 if __name__ == "__main__":
