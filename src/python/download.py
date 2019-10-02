@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 
-import requests
-from bs4 import BeautifulSoup, SoupStrainer
 import os
 import sys
 from time import time
-import zipfile
+
 from queue import Queue
 from threading import Thread
-from re import compile
 import multiprocessing
 
+import requests
+from bs4 import BeautifulSoup, SoupStrainer
+
+from re import compile
+import zipfile
+
+from halo import Halo
 
 # TODO:
 # Convert to electron-python app
@@ -168,7 +172,7 @@ def read_file(file):
     return users
 
 
-def spawn_get_image_links_workers(user):
+def spawn_get_image_links_workers(user, post_links):
     post_queue = Queue()
     for t in range(10):
         worker = Post_Image_Worker(post_queue)
@@ -179,7 +183,7 @@ def spawn_get_image_links_workers(user):
     post_queue.join()
 
 
-def spawn_download_image_workers(user, links):
+def spawn_download_image_workers(archive_dir, user, links):
     image_queue = Queue()
     for t in range(10):
         worker = Image_Download_Worker(image_queue)
@@ -209,7 +213,7 @@ def download_user(user, depth):
     archive_dir = str(path) + "/" + str(user)
 
     post_image_time = time()
-    spawn_get_image_links_workers(user)
+    spawn_get_image_links_workers(user, post_links)
     print("[Obtained image links]:[" + str(time() - post_image_time) + "]")
 
     print("[Number of images to Download: " + str(len(global_image_links)) + "]")
@@ -224,7 +228,7 @@ def download_user(user, depth):
 
     print("[Downloading Images]")
     image_download_time = time()
-    spawn_download_image_workers(user, links)
+    spawn_download_image_workers(archive_dir, user, links)
     print("[Finsihed Downloading]:[" + str(time() - image_download_time) + "]")
 
     print("[" + str(user) + "]:[" + str(time() - ts) + "]")
