@@ -39,6 +39,7 @@ path = "Archives"
 
 global_image_links = []
 global_image_counter = 0
+total_size = 0.0
 multiproc = False
 spinners = Spinners()
 
@@ -160,6 +161,7 @@ def prepare_image_links(directory, user, image_links):
 
 def download_image(directory, user, link):
     global global_image_counter
+    global total_size
     global spinners
     image_name = "[" + str(user) + "]" + "_" + link.rsplit("/", 1)[1]
     download_path = str(directory) + "/" + str(image_name)
@@ -167,7 +169,13 @@ def download_image(directory, user, link):
     with open(str(download_path), "wb") as f:
         f.write(r.content)
     global_image_counter += 1
-    spinners.download_images.text = f'Downloading Images [{global_image_counter}/{len(global_image_links)}]'
+    total_size += (len(r.content) / 1000000)
+    size_measure = 'MBs'
+    if total_size > 1024:
+        total_size = total_size / 1024
+        size_measure = 'GBs'
+    spinner_text = f'Downloading Images [{global_image_counter}/{len(global_image_links)}] {round(total_size,2)} {size_measure}'
+    spinners.download_images.text = spinner_text
 
 
 # Use generator?
@@ -203,6 +211,7 @@ def spawn_download_image_workers(archive_dir, user, links):
 def download_user(user, depth, verbose=False):
     global global_image_links
     global global_image_counter
+    global total_size
     global spinners
 
     ts = time()
@@ -252,7 +261,11 @@ def download_user(user, depth, verbose=False):
     spawn_download_image_workers(archive_dir, user, links)
 
     if verbose:
-        spinners.download_images.succeed(text=f'Downloading Complete')
+        size_measure = 'MBs'
+        if total_size > 1024:
+            total_size = total_size / 1024
+            size_measure = 'GBs'
+        spinners.download_images.succeed(text=f'Downloading Complete {round(total_size,2)} {size_measure}')
 
     print(f'[{user}]:[{time() - ts}]')
     print('=================================')
