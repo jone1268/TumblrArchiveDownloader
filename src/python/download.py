@@ -40,7 +40,7 @@ def parse_arguments(argv):
 
     users = []
     for index, arg in enumerate(argv):
-        if str(arg) == "-d":
+        if str(arg) == '-d':
             # Depth tag induced
             if (index+1) is l:
                 # Missing depth value
@@ -49,7 +49,7 @@ def parse_arguments(argv):
             else:
                 depth = int(argv[index+1])
                 break
-        elif str(arg) == "-m":
+        elif str(arg) == '-m':
             multiproc = True
         else:
             try:
