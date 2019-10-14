@@ -19,26 +19,28 @@ class Spinners:
     def __init__(self):
         self.posts = Halo(text=f'Gathering Posts', spinner='dots', color='blue')
         self.image_links = Halo(text=f'Gathering Image Links', spinner='dots', color='blue')
-        self.prepare_links = Halo(text=f'Preparing Image Links', spinner='dots', color='blue')
         self.download_images = Halo(text=f'Downloading Images', spinner='dots', color='blue')
 
 class DownloadController:
 
-    def __init__(self, user, dst_dir, depth=5, verbose=True):
+    def __init__(self, user, dst_dir, depth=5, max_threads=10, verbose=True):
         self.user = user
-        self.dst_dir = dst_dir
+        self.dst_dir = f'{dst_dir}/{user}'
         self.depth = depth
         self.verbose = verbose
+
         self.image_links = []
         self.image_counter = 0
         self.total_size = 0.0
+
+        self.max_threads = max_threads
+
         self.spinners = Spinners()
-        self.max_threads = 10
         self.TS = TumblrService(self)
 
 
     def download_user(self):
-        if self.verbose: self.spinners.posts.start()
+        if self.verbose: self.spinners.posts.start(text=f'Gathering Posts [0/{self.depth}]')
 
         post_links = self.TS.get_post_links(self.user, self.depth)
 
@@ -48,23 +50,17 @@ class DownloadController:
             print('=================================')
             return
 
-        archive_dir = f'{self.dst_dir}/{self.user}'
-
         if self.verbose: self.spinners.image_links.start()
 
         self.spawn_get_image_links_workers(post_links)
 
-        if self.verbose: self.spinners.image_links.succeed()
-
-        if self.verbose: self.spinners.prepare_links.start()
-
-        links = self.prepare_image_links(archive_dir, self.user, self.TS.image_links)
+        links = self.prepare_image_links(self.dst_dir, self.user, self.TS.image_links)
 
         if len(links) == 0:
-            self.spinners.prepare_links.stop_and_persist(symbol='⚠', text='No new images to Download with given depth')
+            self.spinners.image_links.stop_and_persist(symbol='⚠', text='No new images to Download with given depth')
             return
 
-        if self.verbose: self.spinners.prepare_links.succeed(text=f'New Images to Download: {len(links)}')
+        if self.verbose: self.spinners.image_links.succeed(text=f'New Images to Download: {len(links)}')
 
         if self.verbose: self.spinners.download_images.start(text=f'Downloading Images [{self.image_counter}/{len(links)}]')
 
@@ -87,6 +83,7 @@ class DownloadController:
 
     """
     Prepares what images to download
+    TODO: This is broken, FIX IT
     TODO: Make this better
     """
     def prepare_image_links(self, location, user, image_links):

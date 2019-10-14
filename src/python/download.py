@@ -71,14 +71,14 @@ def main(argv):
     depth = 5
     l = len(argv)
 
-    dst_dir = 'Archives'
+    root = 'Archives'
 
     print(f'Depth: {depth}')
     print(users)
     print('=================================')
 
-    if not os.path.exists(dst_dir):
-        os.mkdir(dst_dir)
+    if not os.path.exists(root):
+        os.mkdir(root)
 
     total_time = time()
 
@@ -86,7 +86,7 @@ def main(argv):
         for user in users:
             print(f'[{user}]')
             ts = time()
-            downloader = DownloadController(user=user, dst_dir=dst_dir, depth=5)
+            downloader = DownloadController(user=user, dst_dir=root, depth=5)
             downloader.download_user()
             print(f'[{user}]:[{round(time() - ts,2)}]')
             print('=================================')
@@ -94,7 +94,7 @@ def main(argv):
         p_workers = []
         for user in users:
             print(f'[{user}]')
-            downloader = DownloadController(user=user, dst_dir=dst_dir, depth=5, verbose=False)
+            downloader = DownloadController(user=user, dst_dir=root, depth=5, verbose=False)
             p_worker = multiprocessing.Process(target=downloader.download_user)
             p_worker.start()
             p_workers.append(p_worker)

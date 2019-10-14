@@ -59,6 +59,7 @@ class TumblrService:
                 posts_flag += 1
 
             post_links = sorted(set(post_links))
+            self.dlc.spinners.posts.text = f'Gathering Posts [{page}/{max_pages}]'
             page += 1
         if len(post_links) == 0:
             print("[Could not find any posts]")
