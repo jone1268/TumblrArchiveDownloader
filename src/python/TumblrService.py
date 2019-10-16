@@ -59,7 +59,7 @@ class TumblrService:
                 posts_flag += 1
 
             post_links = sorted(set(post_links))
-            self.dlc.spinners.posts.text = f'Gathering Posts [{page}/{max_pages}]'
+            self.dlc.spinners.posts.text = f'Gathering Posts | Page: [{page}/{max_pages}]'
             page += 1
         if len(post_links) == 0:
             print('[Could not find any posts]')
@@ -93,6 +93,8 @@ class TumblrService:
         image_links = sorted(set(image_links))
         self.image_links.extend(image_links)
         self.image_links = list(set(self.image_links))
+        self.dlc.image_link_counter += 1
+        self.dlc.spinners.image_links.text = f'Gathering Image Links | Post: [{self.dlc.image_link_counter}/{self.dlc.num_image_links}]'
 
 
     """

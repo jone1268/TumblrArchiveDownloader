@@ -36,19 +36,28 @@ def read_file(file):
 
 
 def parse_arguments(argv):
-    global multiproc
+
+    # TODO:
+    # Make each user have a depth argument
+    # i.e.: -d 10 user1 user2 -d 3 user3 (user2 would have same depth as previous depth provided)
+    # return list of objects: (list({user: "user1", depth: 10}, ...), multiproc)
 
     users = []
+    depth = 5
+    depth_flag = False
+    multiproc = False
     for index, arg in enumerate(argv):
+        if depth_flag:
+            depth_flag = False
+            continue
         if str(arg) == '-d':
             # Depth tag induced
-            if (index+1) is l:
-                # Missing depth value
-                # Use default
-                pass
-            else:
+            try:
                 depth = int(argv[index+1])
-                break
+                depth_flag = True
+                continue
+            except:
+                print('Invalid depth provided. Using default depth: 5')
         elif str(arg) == '-m':
             multiproc = True
         else:
@@ -61,14 +70,12 @@ def parse_arguments(argv):
                 # This argument is a user
                 # print('File not exist, probably a user')
                 users.append(arg)
-    return sorted(set(users))
+    return (sorted(set(users)), depth, multiproc)
 
 
 def main(argv):
-    global multiproc
 
-    users = parse_arguments(argv)
-    depth = 5
+    users, depth, multiproc = parse_arguments(argv)
     l = len(argv)
 
     root = 'Archives'
@@ -86,7 +93,7 @@ def main(argv):
         for user in users:
             print(f'[{user}]')
             ts = time()
-            downloader = DownloadController(user=user, dst_dir=root, depth=5)
+            downloader = DownloadController(user=user, dst_dir=root, depth=depth)
             downloader.download_user()
             print(f'[{user}]:[{round(time() - ts,2)}]')
             print('=================================')
@@ -94,7 +101,7 @@ def main(argv):
         p_workers = []
         for user in users:
             print(f'[{user}]')
-            downloader = DownloadController(user=user, dst_dir=root, depth=5, verbose=False)
+            downloader = DownloadController(user=user, dst_dir=root, depth=depth, verbose=False)
             p_worker = multiprocessing.Process(target=downloader.download_user)
             p_worker.start()
             p_workers.append(p_worker)

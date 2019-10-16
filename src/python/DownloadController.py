@@ -29,7 +29,8 @@ class DownloadController:
         self.depth = depth
         self.verbose = verbose
 
-        self.image_links = []
+        self.image_link_counter = 0
+        self.num_image_links = 0
         self.image_counter = 0
         self.total_size = 0.0
 
@@ -39,18 +40,24 @@ class DownloadController:
         self.TS = TumblrService(self)
 
 
+# TODO:
+# Extract different sections of download_user to other methods
+# Create progress logging for multiprocess mode
+
     def download_user(self):
-        if self.verbose: self.spinners.posts.start(text=f'Gathering Posts [0/{self.depth}]')
+        if self.verbose: self.spinners.posts.start(text=f'Gathering Posts | Page: [0/{self.depth}]')
 
         post_links = self.TS.get_post_links(self.user, self.depth)
 
-        if self.verbose: self.spinners.posts.succeed()
+        if self.verbose: self.spinners.posts.succeed(text=f'Finished Gathering Posts')
 
         if len(post_links) == 0:
             print('=================================')
             return
 
-        if self.verbose: self.spinners.image_links.start()
+        self.num_image_links = len(post_links)
+
+        if self.verbose: self.spinners.image_links.start(text=f'Gathering Image Links | Post: [0/{self.num_image_links}]')
 
         self.spawn_get_image_links_workers(post_links)
 
