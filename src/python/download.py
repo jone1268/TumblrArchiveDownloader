@@ -75,7 +75,7 @@ def threaded(users, root):
         print('=================================')
 
 
-def multiproc(users, root):
+def multiprocessed(users, root):
     p_workers = []
     for user, depth in users.items():
         print(f'[{user}, at depth: {depth}]')
@@ -105,7 +105,7 @@ def main(argv):
     if not multiproc: # Iterate
         threaded(users, root)
     else: # Create new process
-        multiproc(users, root)
+        multiprocessed(users, root)
 
     print(f'[Total exec time: {round(time() - total_time, 2)}]')
 
