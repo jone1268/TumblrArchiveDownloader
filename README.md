@@ -1,16 +1,16 @@
 # TumblrArchiveDownloader
 Downloads a Tumblr Archive given a Tumblr user
 
-Bash Script downloads whole archive, however uses wget recursive downloading. This is slow and has to locally download the whole archive files in order to find the images.
-
-Python solution is better. Spider crawls through pages of user and collects post links.
-Then follows post links to grab images.
-
 # Usage
 
 # Python
 ```
-python3.7 download.py <username, ...> <filename, ...> -d <depth>
+python3.7 download.py [username, ...] [filename, ...]
+
+-d <depth> can be inserted infront of any user to define the depth for said user
+ex:
+python3.7 download.py -d 10 user1 user2 -d 3 user3
+(user1 and user2 will have depth of 10 whereas user3 will have depth of 3)
 ```
 Can have variable usernames and filenames in same command.  
 *-d* tag is optional.  

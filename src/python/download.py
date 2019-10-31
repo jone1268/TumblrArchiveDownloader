@@ -36,13 +36,7 @@ def read_file(file):
 
 
 def parse_arguments(argv):
-
-    # TODO:
-    # Make each user have a depth argument
-    # i.e.: -d 10 user1 user2 -d 3 user3 (user2 would have same depth as previous depth provided)
-    # return list of objects: (list({user: "user1", depth: 10}, ...), multiproc)
-
-    users = []
+    users = {}
     depth = 5
     depth_flag = False
     multiproc = False
@@ -50,8 +44,7 @@ def parse_arguments(argv):
         if depth_flag:
             depth_flag = False
             continue
-        if str(arg) == '-d':
-            # Depth tag induced
+        if str(arg) == '-d': # Depth tag induced
             try:
                 depth = int(argv[index+1])
                 depth_flag = True
@@ -62,25 +55,49 @@ def parse_arguments(argv):
             multiproc = True
         else:
             try:
-                # print(arg)
                 f = open(arg, 'r')
-                users.extend(read_file(f))
+                for user in read_file(f):
+                    users[user] = depth
                 f.close()
             except FileNotFoundError:
                 # This argument is a user
-                # print('File not exist, probably a user')
-                users.append(arg)
-    return (sorted(set(users)), depth, multiproc)
+                users[arg] = depth
+    print(users)
+    return (users, multiproc)
+
+
+def threaded(users, root):
+    for user in users:
+        depth = users[user]
+        print(f'[{user} at depth: {depth}]')
+        start_time = time()
+        downloader = DownloadController(user=user, dst_dir=root, depth=depth)
+        downloader.download_user()
+        print(f'[{user}]:[{round(time() - start_time,2)}]')
+        print('=================================')
+
+
+def multiproc(users, root):
+    p_workers = []
+    for user in users:
+        depth = users[user]
+        print(f'[{user}, at depth: {depth}]')
+        downloader = DownloadController(user=user, dst_dir=root, depth=depth, verbose=False)
+        p_worker = multiprocessing.Process(target=downloader.download_user)
+        p_worker.start()
+        p_workers.append(p_worker)
+    for p in p_workers:
+        p.join()
 
 
 def main(argv):
 
-    users, depth, multiproc = parse_arguments(argv)
+    users, multiproc = parse_arguments(argv)
     l = len(argv)
 
     root = 'Archives'
 
-    print(f'Depth: {depth}')
+    # print(f'Depth: {depth}')
     print(users)
     print('=================================')
 
@@ -90,23 +107,9 @@ def main(argv):
     total_time = time()
 
     if not multiproc: # Iterate
-        for user in users:
-            print(f'[{user}]')
-            ts = time()
-            downloader = DownloadController(user=user, dst_dir=root, depth=depth)
-            downloader.download_user()
-            print(f'[{user}]:[{round(time() - ts,2)}]')
-            print('=================================')
+        threaded(users, root)
     else: # Create new process
-        p_workers = []
-        for user in users:
-            print(f'[{user}]')
-            downloader = DownloadController(user=user, dst_dir=root, depth=depth, verbose=False)
-            p_worker = multiprocessing.Process(target=downloader.download_user)
-            p_worker.start()
-            p_workers.append(p_worker)
-        for p in p_workers:
-            p.join()
+        multiproc(users, root)
 
     print(f'[Total exec time: {round(time() - total_time, 2)}]')
 
