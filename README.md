@@ -8,9 +8,11 @@ Downloads a Tumblr Archive given a Tumblr user
 python3.7 download.py [username, ...] [filename, ...]
 
 -d <depth> can be inserted infront of any user to define the depth for said user
+-d <depth> can be inserted infront of any file to define the depth for users in file
 ex:
-python3.7 download.py -d 10 user1 user2 -d 3 user3
+python3.7 download.py -d 10 user1 user2 -d 3 user3 -d 6 file
 (user1 and user2 will have depth of 10 whereas user3 will have depth of 3)
+(users in file will have depth of 6)
 ```
 Can have variable usernames and filenames in same command.  
 *-d* tag is optional.  

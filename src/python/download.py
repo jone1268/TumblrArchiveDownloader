@@ -62,13 +62,11 @@ def parse_arguments(argv):
             except FileNotFoundError:
                 # This argument is a user
                 users[arg] = depth
-    print(users)
     return (users, multiproc)
 
 
 def threaded(users, root):
-    for user in users:
-        depth = users[user]
+    for user, depth in users.items():
         print(f'[{user} at depth: {depth}]')
         start_time = time()
         downloader = DownloadController(user=user, dst_dir=root, depth=depth)
@@ -79,8 +77,7 @@ def threaded(users, root):
 
 def multiproc(users, root):
     p_workers = []
-    for user in users:
-        depth = users[user]
+    for user, depth in users.items():
         print(f'[{user}, at depth: {depth}]')
         downloader = DownloadController(user=user, dst_dir=root, depth=depth, verbose=False)
         p_worker = multiprocessing.Process(target=downloader.download_user)
@@ -97,7 +94,6 @@ def main(argv):
 
     root = 'Archives'
 
-    # print(f'Depth: {depth}')
     print(users)
     print('=================================')
 

@@ -90,7 +90,6 @@ class DownloadController:
 
     """
     Prepares what images to download
-    TODO: This is broken, FIX IT
     TODO: Make this better
     """
     def prepare_image_links(self, location, user, image_links):
