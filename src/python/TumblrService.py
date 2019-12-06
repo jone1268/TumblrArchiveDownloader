@@ -32,39 +32,57 @@ class TumblrService:
     def get_post_links(self, user, max_pages=5):
         if user == '':
             return
+        
         if type(max_pages) is not int:
-            max_pages = 0
+            max_pages = 5
+        
         page = 1
         post_links = []
-        posts_flag = 1
-        if max_pages <= 0:
-            max_pages = 100
-        while page <= max_pages and posts_flag > 0:
-            posts_flag = 0
-            url = f'https://{user}.tumblr.com/page/{page}'
-            response = requests.get(url)
-            plain_text = response.text
-            post_url_len = len(f'{user}.tumblr.com/post/')
-            for post in BeautifulSoup(plain_text, 'html.parser', parse_only=SoupStrainer('a')):
-                if not post.has_attr('href'):
-                    continue
-                if post['href'] is None:
-                    continue
-                if "plus.google" in post['href']:
-                    continue
-                if f'http://{user}.tumblr.com/post/' not in post['href'][:post_url_len + 7] \
-                and f'https://{user}.tumblr.com/post/' not in post['href'][:post_url_len + 8]:
-                    continue
-                post_links.append(self.get_short_link(post['href']))
-                posts_flag += 1
+        full_archive = False
+        previous_posts = []
 
-            post_links = sorted(set(post_links))
+        if max_pages <= 0:
+            max_pages = '?'
+            full_archive = True
+
+        while True:
+            posts_flag = 0
+            posts = self.parse_post_links(user, page)
+            post_links.extend(posts)
             self.dlc.spinners.posts.text = f'Gathering Posts | Page: [{page}/{max_pages}]'
             page += 1
+            if not full_archive and page > max_pages:
+                # Reached requested pages
+                break
+            if len(posts) == 0 or previous_posts == posts:
+                # Current page did not have any posts, stop looping
+                break
+            previous_posts = posts.copy()
         if len(post_links) == 0:
             print('[Could not find any posts]')
             return []
-        return post_links
+        return sorted(set(post_links))
+
+    """
+    Parses for post links
+    """
+    def parse_post_links(self, user, page):
+        posts = []
+        response = requests.get(f'https://{user}.tumblr.com/page/{page}')
+        plain_text = response.text
+        post_url_len = len(f'{user}.tumblr.com/post/')
+        for post in BeautifulSoup(plain_text, 'html.parser', parse_only=SoupStrainer('a')):
+            if not post.has_attr('href'):
+                continue
+            if post['href'] is None:
+                continue
+            if "plus.google" in post['href']:
+                continue
+            if f'http://{user}.tumblr.com/post/' not in post['href'][:post_url_len + 7] \
+            and f'https://{user}.tumblr.com/post/' not in post['href'][:post_url_len + 8]:
+                continue
+            posts.append(self.get_short_link(post['href']))
+        return posts
 
     """
     Gathers image urls from a post url provided

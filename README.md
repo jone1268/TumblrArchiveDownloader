@@ -16,7 +16,7 @@ python3.7 download.py -d 10 user1 user2 -d 3 user3 -d 6 file
 ```
 Can have variable usernames and filenames in same command.  
 *-d* tag is optional.  
-Default depth is 5. Add *-d* tag to change depth. Depth of -1 will go 100 pages.
+Default depth is 5. Add *-d* tag to change depth. Depth of -1 get all pages of user.
 # Bash V6
 ```
 Usage: $0 tumblrUserName/textdocument

@@ -45,7 +45,7 @@ class DownloadController:
 # Create progress logging for multiprocess mode
 
     def download_user(self):
-        if self.verbose: self.spinners.posts.start(text=f'Gathering Posts | Page: [0/{self.depth}]')
+        if self.verbose: self.spinners.posts.start(text=f'Gathering Posts | Page: [0/?]')
 
         post_links = self.TS.get_post_links(self.user, self.depth)
 
