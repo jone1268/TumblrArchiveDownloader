@@ -1,0 +1,3 @@
+requests
+halo
+beautifulsoup4
